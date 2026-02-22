@@ -69,15 +69,19 @@ void Mode_Addition() {
   tft.print("BP2 : retour menu");
 
   while (mode == 1) {
-    if (Appui(BP1)) {
+    if (digitalRead(BP1) == 1) {
       compteurBP1 = compteurBP1 + 1;
+
       tft.fillRect(20, 60, 300, 25, TFT_BLACK);
       tft.setCursor(20, 60);
       tft.print("Compteur = ");
       tft.print(compteurBP1);
-    }
 
-    if (Appui(BP3)) {
+      delay(20);  // anti-rebond appui
+      while (digitalRead(BP1) == 1) {}
+      delay(20);  // anti-rebond relâchement
+    }
+    if (digitalRead(BP3)) {
       compteurBP1 = 0;
       tft.fillRect(20, 60, 300, 25, TFT_BLACK);
       tft.setCursor(20, 60);
@@ -85,7 +89,7 @@ void Mode_Addition() {
       tft.print(compteurBP1);
     }
 
-    if (Appui(BP2) || Appui(BP4)) {
+    if (digitalRead(BP2) || digitalRead(BP4)) {
       mode = 0;
     }
   }
@@ -97,7 +101,7 @@ void i2s_init_simple() {
   cfg.mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX);
   cfg.sample_rate = SAMPLE_RATE;
   cfg.bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT;
-  cfg.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
+  cfg.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
   cfg.communication_format = I2S_COMM_FORMAT_I2S;
   cfg.dma_buf_count = 8;
   cfg.dma_buf_len = 256;
@@ -115,45 +119,47 @@ void i2s_init_simple() {
 }
 
 void beep_A4_50ms() {
-  // Nombre d'échantillons à jouer pour 50 ms
-  const int beepDurationMs = 50;
-  const int totalFrames = (SAMPLE_RATE * beepDurationMs) / 1000;
+  int dureeMs;
+  int nombreEchantillons;
+  int demiPeriode;
+  int compteurDemiPeriode;
+  int i;
 
-  // Onde carrée à 440 Hz :
-  // halfPeriodSamples = nombre d'échantillons avant d'inverser le signe (+/-)
-  const int halfPeriodSamples = SAMPLE_RATE / (2 * FREQ_BEEP);
+  int16_t valeur;
+  int16_t echantillonG;
+  size_t octetsEcrits;
 
-  // Buffer stéréo : 1 frame = 2 échantillons (L et R)
-  static int16_t stereoBuffer[256 * 2];
+  dureeMs = 50;
+  nombreEchantillons = (SAMPLE_RATE * dureeMs) / 1000;
 
-  int framesSent = 0;
-  int samplesIntoHalfPeriod = 0;
-  int16_t sampleValue = AMP_BEEP;  // commence en positif
+  demiPeriode = SAMPLE_RATE / (2 * FREQ_BEEP);  // demi-période de 440 Hz (onde carrée)
 
-  while (framesSent < totalFrames) {
-    int framesToGenerate = min(256, totalFrames - framesSent);
+  valeur = AMP_BEEP;
+  compteurDemiPeriode = 0;
 
-    for (int i = 0; i < framesToGenerate; i++) {
-      // Avance dans la demi-période, inverse le signe si on atteint la limite
-      samplesIntoHalfPeriod++;
-      if (samplesIntoHalfPeriod >= halfPeriodSamples) {
-        samplesIntoHalfPeriod = 0;
-        sampleValue = -sampleValue;
+  //Création du beep via la boucle for
+  for (i = 0; i < nombreEchantillons; i++) {
+
+    echantillonG = valeur;
+
+    i2s_write(I2S_NUM_0, &echantillonG, 2, &octetsEcrits, portMAX_DELAY);  //int16_t = 2 octets
+
+    compteurDemiPeriode = compteurDemiPeriode + 1;
+
+    if (compteurDemiPeriode >= demiPeriode) {
+      compteurDemiPeriode = 0;
+
+      if (valeur > 0) {
+        valeur = -AMP_BEEP;
+      } else {
+        valeur = AMP_BEEP;
       }
-
-      // Même valeur sur gauche et droite
-      stereoBuffer[2 * i + 0] = sampleValue;  // Left
-      stereoBuffer[2 * i + 1] = sampleValue;  // Right
     }
+  }
 
-    // Envoi du buffer au périphérique I2S
-    size_t bytesWritten = 0;
-    i2s_write(I2S_NUM_0,
-              stereoBuffer,
-              framesToGenerate * 2 * sizeof(int16_t),
-              &bytesWritten,
-              portMAX_DELAY);
-
-    framesSent += framesToGenerate;
+  //retour au silence, peut evité certains bruit parasite(recommendation de Gpt)
+  echantillonG = 0;
+  for (i = 0; i < 20; i++) {
+    i2s_write(I2S_NUM_0, &echantillonG, 2, &octetsEcrits, portMAX_DELAY);
   }
 }

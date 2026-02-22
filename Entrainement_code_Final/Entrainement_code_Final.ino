@@ -14,11 +14,11 @@ int H = 0;
 void setup() {
   Serial.begin(115200);
 
-  // boutons : relâché=0, appuyé=1  => PULLDOWN partout
-  pinMode(BP1, INPUT_PULLDOWN);
-  pinMode(BP2, INPUT_PULLDOWN);
-  pinMode(BP3, INPUT_PULLDOWN);
-  pinMode(BP4, INPUT_PULLDOWN);
+  // boutons : relâché=0, appuyé=1
+  pinMode(BP1, INPUT);
+  pinMode(BP2, INPUT);
+  pinMode(BP3, INPUT);
+  pinMode(BP4, INPUT);
 
   tft.init();
   tft.setRotation(2);
@@ -47,14 +47,19 @@ void setup() {
 void loop() {
   // --------- MODE 0 : MENU ----------
   if (mode == 0) {
-    if (Appui(BP1) == 1)
+    if (digitalRead(BP1) == 1) {
       mode = 1;
-    else if (Appui(BP2) == 1)
+      delay(20);
+    } else if (digitalRead(BP2) == 1) {
       mode = 2;
-    else if (Appui(BP3) == 1)
+      delay(20);
+    } else if (digitalRead(BP3) == 1) {
       mode = 3;
-    else if (Appui(BP4) == 1)
+      delay(20);
+    } else if (digitalRead(BP4) == 1) {
       mode = 4;
+      delay(20);
+    }
   }
 
   // --------- MODE 1 ----------
@@ -74,8 +79,8 @@ void loop() {
     tft.print("BP2/BP4 : retour menu");
 
     while (mode == 2) {
-      if (Appui(BP2) == 1 || Appui(BP4) == 1)
-       mode = 0;
+      if (digitalRead(BP2) == 1 || digitalRead(BP4) == 1)
+        mode = 0;
       delay(5);
     }
     AfficheMenu();
@@ -94,16 +99,16 @@ void loop() {
     tft.print("BP2/BP4 : retour menu");
 
     while (mode == 3) {
-      if (Appui(BP3) == 1) 
-      beep_A4_50ms();
-      if (Appui(BP2) == 1 || Appui(BP4) == 1)
-       mode = 0;
+      if (digitalRead(BP3) == 1)
+        beep_A4_50ms();
+      if (digitalRead(BP2) == 1 || digitalRead(BP4) == 1)
+        mode = 0;
       delay(5);
     }
     AfficheMenu();
   }
 
-  // --------- MODE 4 : 
+  // --------- MODE 4 :
   if (mode == 4) {
     tft.fillScreen(TFT_BLACK);
     tft.setTextColor(TFT_GOLD, TFT_VIOLET);
@@ -118,8 +123,8 @@ void loop() {
     tft.print("OK si tu vois ce cadre");
 
     while (mode == 4) {
-      if (Appui(BP2) == 1 || Appui(BP4) == 1) 
-      mode = 0;
+      if (digitalRead(BP2) == 1 || digitalRead(BP4) == 1)
+        mode = 0;
       delay(5);
     }
     AfficheMenu();
