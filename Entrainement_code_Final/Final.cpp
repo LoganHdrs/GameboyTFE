@@ -3,19 +3,29 @@
 // ======== Affichage ========
 
 void BarChargement500ms() {
-  int barL = L - 80;
-  int barH = 18;
-  int x = 40;
-  int y = H - 60;
+  // ----- Dimensions et position de la barre -----
+  int largeurBarre = L - 80;
+  int hauteurBarre = 18;
+  int positionX = 40;
+  int positionY = H - 60;
 
-  tft.drawRoundRect(x, y, barL, barH, 6, TFT_WHITE);
+  // ----- Dimensions intérieures (zone à remplir) -----
+  int largeurInterieure = 0;
+  int hauteurInterieure = 0;
 
-  int innerW = barL - 2;
-  int innerH = barH - 2;
+  // ----- Variables de boucle -----
+  int largeurRemplissage = 0;
 
-  for (int i = 1; i <= 10; i++) {
-    int fillW = (innerW * i) / 10;
-    tft.fillRoundRect(x + 1, y + 1, fillW, innerH, 5, TFT_WHITE);
+  tft.drawRoundRect(positionX, positionY, largeurBarre, hauteurBarre, 6, TFT_WHITE);  // Contour (6 = coins arrondi 0 = coins carré)
+
+  largeurInterieure = largeurBarre - 2;
+  hauteurInterieure = hauteurBarre - 2;
+
+  for (byte etape = 1; etape <= 10; etape++) {
+
+    largeurRemplissage = (largeurInterieure * etape) / 10;  // Calcul de la largeur à remplir pour l'étape actuelle
+
+    tft.fillRoundRect(positionX + 1, positionY + 1, largeurRemplissage, hauteurInterieure, 5, TFT_WHITE);  // +1 pour evité le contour
     delay(50);
   }
 }
